@@ -1,0 +1,145 @@
+﻿@page "/tagmanager"
+@using VideoManager.Models
+@using System.ComponentModel.DataAnnotations
+@inject IPizzaService PizzaService
+@inject ITagService TagService
+@inject IPizzaTagService PizzaTagService
+@rendermode InteractiveServer
+
+<section>
+
+    <h3>Pizzas!</h3>
+
+    <EditForm EditContext="@editContext">
+
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label">Edible Tag:</label>
+            <InputText @bind-Value="currentTag.Value" Placeholder="Enter tag" />
+            @*<InputText Value="@currentTag.Value" ValueExpression="() => currentTag.Value" Placeholder="Enter tag" />*@
+            @*<ValidationMessage For="@(() => currentTag.Value)" />*@
+        </div>
+
+        @if (editContext.Validate())
+        {
+            <Button @ref="addButton" Color="ButtonColor.Primary" @onclick="HandleButtonAddTagClick"> Add </Button>
+            <Button @ref="deleteButton" Color="ButtonColor.Danger" @onclick="HandleButtonDeleteTagClick"> Delete </Button>
+        }
+        else
+        {
+            <Button @ref="addButton" Color="ButtonColor.Secondary" Disabled="true"> Add </Button>
+            <Button @ref="deleteButton" Color="ButtonColor.Secondary" Disabled="true"> Delete </Button>
+        }
+
+    </EditForm>
+
+</section>
+
+
+<section>
+
+    <p> Tag Table </p>
+
+    @if (availableTags == null)
+    {
+        <p role="status">Tags are loading...</p>
+    }
+    else
+    {
+
+        <Grid TItem="ShortTag"
+              AllowRowClick="true"
+              AllowSorting="true"
+              Class="table table-hover"
+              Data="availableTags"
+              HeaderRowCssClass="bg-primary text-white border-bottom-0"
+              OnRowClick="OnRowClick"
+              Responsive="true">
+
+            <GridColumns>
+                <GridColumn TItem="ShortTag" HeaderText="Tag Name">
+                    @context.Value
+                </GridColumn>
+            </GridColumns>
+
+        </Grid>
+    }
+
+</section>
+
+@code {
+
+    private ShortTag currentTag = new ShortTag();
+    private List<ShortTag> availableTags = new List<ShortTag>();
+
+    private EditContext editContext = default!;
+
+    private Button addButton = default!;
+    private Button deleteButton = default!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(currentTag);
+        base.OnInitialized();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        List<string> availableTagsQueried = await TagService.GetTagList();
+
+        availableTags = new List<ShortTag>();
+        foreach (string element in availableTagsQueried)
+        {
+            ShortTag newTag = new ShortTag(element);
+            availableTags.Add(newTag);
+        }
+
+        await base.OnInitializedAsync();
+    }
+
+    private async Task OnRowClick(GridRowEventArgs<ShortTag> args)
+    {
+        currentTag.Value = args.Item.Value;
+    }
+
+    private async Task HandleButtonAddTagClick()
+    {
+        addButton.ShowLoading("Adding...");
+
+        // await Task.Delay(1000);
+        await TagService.CreateTag(currentTag.Value);
+
+        List<string> availableTagsQueried = await TagService.GetTagList();
+
+        availableTags = new List<ShortTag>();
+        foreach (string element in availableTagsQueried)
+        {
+            ShortTag newTag = new ShortTag(element);
+            availableTags.Add(newTag);
+        }
+
+        addButton.HideLoading();
+    }
+
+    private async Task HandleButtonDeleteTagClick()
+    {
+        addButton.ShowLoading("Deleting...");
+
+        // await Task.Delay(1000);
+        await TagService.DeleteTag(currentTag.Value);
+        
+        List<string> availableTagsQueried = await TagService.GetTagList();
+
+        availableTags = new List<ShortTag>();
+        foreach (string element in availableTagsQueried)
+        {
+            ShortTag newTag = new ShortTag(element);
+            availableTags.Add(newTag);
+        }
+
+        addButton.HideLoading();
+    }
+
+}

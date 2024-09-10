@@ -1,0 +1,33 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\OSTRTA\\vm_3\\VideoManager\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\VideoManager.bundle.scp.css",
+      "PackagePath": "staticwebassets\\VideoManager.bundle.scp.css"
+    },
+    {
+      "Id": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\OSTRTA\\vm_3\\VideoManager\\wwwroot\\app.css",
+      "PackagePath": "staticwebassets\\app.css"
+    },
+    {
+      "Id": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\OSTRTA\\vm_3\\VideoManager\\wwwroot\\favicon.png",
+      "PackagePath": "staticwebassets\\favicon.png"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.VideoManager.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.VideoManager.props",
+      "PackagePath": "build\\VideoManager.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.VideoManager.props",
+      "PackagePath": "buildMultiTargeting\\VideoManager.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.VideoManager.props",
+      "PackagePath": "buildTransitive\\VideoManager.props"
+    }
+  ],
+  "ElementsToRemove": []
+}
