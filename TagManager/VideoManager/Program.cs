@@ -11,6 +11,7 @@ builder.Services.AddServerSideBlazor();
 
 builder.Services.AddSingleton<IDbService, DbService>();
 builder.Services.AddSingleton<IPizzaService, PizzaService>();
+builder.Services.AddSingleton<IRealmService, RealmService>();
 builder.Services.AddSingleton<ITagService, TagService>();
 builder.Services.AddSingleton<IPizzaTagService, PizzaTagService>();
 

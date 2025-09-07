@@ -1,19 +1,70 @@
 ﻿@page "/counter"
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedSessionStorage ProtectedSessionStore
 @rendermode InteractiveServer
 
-<PageTitle>Counter</PageTitle>
 
-<h1>Counter</h1>
+@if (!isConnected)
+{
+    <section>
 
-<p role="status">Current count: @currentCount</p>
+    <h3>Realm Choice</h3>
+    
+    <h2>Loading...</h2>
 
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+    </section>
+}
+else
+{
+    <h1>Realm Choice</h1>
+
+    <Dropdown Color="DropdownColor.Secondary">
+        <DropdownToggleButton>@selectedRealm</DropdownToggleButton>
+        <DropdownMenu>
+            @for (int i = 0; i < realms.Count; i++)
+            {
+                int j = i;
+                <DropdownItem Dropdown="" @onclick=@(_=>HandleRealmDropDownSelection(j)) Type="DropdownItemType.Button">@realms[j]</DropdownItem>
+            }
+        </DropdownMenu>
+    </Dropdown>
+}
+
 
 @code {
-    private int currentCount = 0;
 
-    private void IncrementCount()
+    private List<string> realms = default!;
+    private string? selectedRealm;
+    private bool isConnected;
+
+    protected override async Task OnInitializedAsync()
     {
-        currentCount++;
+        // realms = await Realms.GetList();
+        realms = new List<string> { "one", "two", "three" };
+
+        await base.OnInitializedAsync();
     }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isConnected = true;
+            await LoadRealmAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadRealmAsync()
+    {
+        var result = await ProtectedSessionStore.GetAsync<string>("selectedRealm");
+        selectedRealm = result.Success ? result.Value : "Realm Selection";
+    }
+
+    protected async void HandleRealmDropDownSelection(int i)
+    {
+        selectedRealm = realms[i];
+        await ProtectedSessionStore.SetAsync("selectedRealm", selectedRealm);
+    }
+
 }

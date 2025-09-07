@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "UcwOuuzXpHM=",
+  "dgSpecHash": "iTdDlz5TfGs=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\OSTRTA\\vm_3\\VideoManager\\VideoManager.csproj",
+  "projectFilePath": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\new_OSTRTA\\TagManager\\TagManager\\TagManager\\VideoManager\\VideoManager.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Edward\\.nuget\\packages\\blazor.bootstrap\\3.0.0-preview.3\\blazor.bootstrap.3.0.0-preview.3.nupkg.sha512",
     "C:\\Users\\Edward\\.nuget\\packages\\dapper\\2.1.35\\dapper.2.1.35.nupkg.sha512",

@@ -1,64 +1,145 @@
 ﻿@page "/weather"
-@attribute [StreamRendering]
+@using VideoManager.Models
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedSessionStorage ProtectedSessionStore
+@inject IRealmService RealmService
+@rendermode InteractiveServer
 
 <PageTitle>Weather</PageTitle>
 
 <h1>Weather</h1>
 
-<p>This component demonstrates showing data.</p>
+<section>
 
-@if (forecasts == null)
-{
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Temp. (C)</th>
-                <th>Temp. (F)</th>
-                <th>Summary</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var forecast in forecasts)
-            {
-                <tr>
-                    <td>@forecast.Date.ToShortDateString()</td>
-                    <td>@forecast.TemperatureC</td>
-                    <td>@forecast.TemperatureF</td>
-                    <td>@forecast.Summary</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+    <p> Block 1: Realm Editor </p>
+
+    <EditForm EditContext="@editContext">
+
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label">Realm Name:</label>
+            <InputText @bind-Value="currentRealm.name" Placeholder="Enter name" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Realm View:</label>
+            <InputText @bind-Value="currentRealm.view" Placeholder="Enter view" />
+        </div>
+
+        @if (editContext.Validate())
+        {
+            <Button @ref="addButton" Color="ButtonColor.Primary" @onclick="HandleButtonAddTagClick"> Add </Button>
+            <Button @ref="deleteButton" Color="ButtonColor.Danger" @onclick="HandleButtonDeleteTagClick"> Delete </Button>
+        }
+        else
+        {
+            <Button @ref="addButton" Color="ButtonColor.Secondary" Disabled="true"> Add </Button>
+            <Button @ref="deleteButton" Color="ButtonColor.Secondary" Disabled="true"> Delete </Button>
+        }
+
+    </EditForm>
+
+</section>
+
+<section>
+
+    <p> Block 2: Realm Choice </p>
+
+    @if (allRealms == null)
+    {
+        <p role="status">No realms found...</p>
+    }
+    else
+    {
+
+        <Grid TItem="Realm"
+              AllowRowClick="true"
+              AllowSorting="true"
+              Class="table table-hover"
+              Data="allRealms"
+              HeaderRowCssClass="bg-primary text-white border-bottom-0"
+              OnRowClick="OnRowClick"
+              Responsive="true">
+
+            <GridColumns>
+                <GridColumn TItem="Realm" HeaderText="Name">
+                    @context.name
+                </GridColumn>
+
+                <GridColumn TItem="Realm" HeaderText="View">
+                    @context.view
+                </GridColumn>
+            </GridColumns>
+
+        </Grid>
+    }
+
+</section>
 
 @code {
-    private WeatherForecast[]? forecasts;
+
+    private Realm currentRealm = new Realm();
+    private List<Realm> allRealms = default!;
+
+    private EditContext editContext = default!;
+
+    private Button addButton = default!;
+    private Button deleteButton = default!;
+
+    private bool isConnected;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(currentRealm);
+        base.OnInitialized();
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        // Simulate asynchronous loading to demonstrate streaming rendering
-        await Task.Delay(500);
-
-        var startDate = DateOnly.FromDateTime(DateTime.Now);
-        var summaries = new[] { "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching" };
-        forecasts = Enumerable.Range(1, 5).Select(index => new WeatherForecast
-        {
-            Date = startDate.AddDays(index),
-            TemperatureC = Random.Shared.Next(-20, 55),
-            Summary = summaries[Random.Shared.Next(summaries.Length)]
-        }).ToArray();
+        currentRealm.name = "";
+        allRealms = await RealmService.GetRealmList();
+        await base.OnInitializedAsync();
     }
 
-    private class WeatherForecast
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        public DateOnly Date { get; set; }
-        public int TemperatureC { get; set; }
-        public string? Summary { get; set; }
-        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+        if (firstRender)
+        {
+            isConnected = true;
+            StateHasChanged();
+        }
     }
+
+    private async Task OnRowClick(GridRowEventArgs<Realm> args)
+    {
+        currentRealm = args.Item;
+    }
+
+    private async Task HandleButtonAddTagClick()
+    {
+        addButton.ShowLoading("Adding...");
+
+        // await Task.Delay(1000);
+        await RealmService.CreateRealm(currentRealm.name, currentRealm.view);
+
+        allRealms = await RealmService.GetRealmList();
+
+        addButton.HideLoading();
+    }
+
+    private async Task HandleButtonDeleteTagClick()
+    {
+        deleteButton.ShowLoading("Deleting...");
+
+        // await Task.Delay(1000);
+        await RealmService.DeleteRealm(currentRealm.name);
+
+        allRealms = await RealmService.GetRealmList();
+
+        deleteButton.HideLoading();
+    }
+
 }

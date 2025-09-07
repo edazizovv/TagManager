@@ -11,6 +11,16 @@ using System.Collections.Generic;
 namespace VideoManager.Models
 {
 
+    public class Realm
+    {
+        [Required(ErrorMessage = "Name required")]
+        [RegularExpression("^[a-z_]{2,3}$", ErrorMessage = "String must contain only a-z literals or underscore and be 2-3 characters length")]
+        public string name { get; set; }
+        [Required(ErrorMessage = "View required")]
+        [RegularExpression("^[a-zA-Z_:\\\\]{3,100}$", ErrorMessage = "String must contain only a-z literals or underscore or slashes and be 3-100 characters length")]
+        public string view { get; set; }
+    }
+
     public class Pizza
     {
         public int id { get; set; }
@@ -150,6 +160,7 @@ namespace VideoManager.Models
             if (filterTags.Count > 0)
                 {
                 var tagSet = "(" + string.Join(", ", filterTags.Select(t => "'" + t + "'")) + ")";
+                /*
                 string query = "SELECT x.id FROM " +
                     "( " +
                     "SELECT a.id " +
@@ -163,10 +174,23 @@ namespace VideoManager.Models
                     ") AS a " +
                     "WHERE a.n = @N " +
                     ") AS x";
+                */
+                string query = "SELECT DISTINCT x.id " +
+                    "FROM public.pizzatag AS x " +
+                    "WHERE x.tag IN " + tagSet +
+                    ";";
                 var pizzaIds = await _dbService.GetAll<string>(
-                    query, new { N = filterTags.Count });
-                var idSet = "(" + string.Join(", ", pizzaIds.Select(t => t)) + ")";
-                var pizzaList = await _dbService.GetAll<Pizza>("SELECT * FROM public.pizzas WHERE id IN " + idSet, new { });
+                    query, new {  });
+                List<Pizza> pizzaList = default!;
+                if (pizzaIds.Count > 0)
+                {
+                    var idSet = "(" + string.Join(", ", pizzaIds.Select(t => t)) + ")";
+                    pizzaList = await _dbService.GetAll<Pizza>("SELECT * FROM public.pizzas WHERE id IN " + idSet, new { });
+                }
+                else
+                {
+                    pizzaList = default!;
+                }
                 return pizzaList;
             }
             else
@@ -224,6 +248,48 @@ namespace VideoManager.Models
         public async Task<bool> DeleteTag(string tag)
         {
             var deleteTag = await _dbService.Delete<int>("DELETE FROM public.tags WHERE tag=@Tag", new { Tag = tag });
+            return true;
+        }
+
+    }
+
+    public interface IRealmService
+    {
+        public Task<bool> CreateRealm(string realmName, string realmView);
+        public Task<List<Realm>> GetRealmList();
+        public Task<bool> DeleteRealm(string realmName);
+    }
+
+    public class RealmService : IRealmService
+    {
+        private readonly IDbService _dbService;
+
+        public RealmService(IDbService dbService)
+        {
+            _dbService = dbService;
+        }
+
+        public async Task<bool> CreateRealm(string realmName, string realmView)
+        {
+            var result = await _dbService.Insert<int>(
+                "INSERT INTO public.accessories (name, view) " + 
+                "VALUES (@RealmName, @RealmView)", 
+                new { RealmName = realmName, RealmView = realmView }
+                );
+            return true;
+        }
+
+        public async Task<List<Realm>> GetRealmList()
+        {
+            var realmList = await _dbService.GetAll<Realm>("SELECT * FROM public.accessories", new { });
+            return realmList;
+        }
+
+        public async Task<bool> DeleteRealm(string realmName)
+        {
+            var deleteRealm = await _dbService.Delete<int>(
+                "DELETE FROM public.accessories " +
+                "WHERE name=@RealmName", new { RealmName = realmName });
             return true;
         }
 
