@@ -97,13 +97,17 @@ else
                 Responsive="true">
 
             <GridColumns>
+
+                <GridColumn TItem="Pizza" HeaderText="Thumbnail">
+                    <img src="@context.thumbnail"
+                            alt="thumbnail"
+                            style="width:60px; height:60px; object-fit:cover; border-radius:8px;" />
+                </GridColumn>
+
                 <GridColumn TItem="Pizza" HeaderText="Name">
                     @context._name
                 </GridColumn>
 
-                <GridColumn TItem="Pizza" HeaderText="Description">
-                    @context._description
-                </GridColumn>
             </GridColumns>
 
         </Grid>

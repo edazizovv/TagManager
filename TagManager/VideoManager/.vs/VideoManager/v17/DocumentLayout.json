@@ -7,16 +7,20 @@
       "RelativeMoniker": "D:0:0:{2B207946-4C41-4813-B28A-F160C15F6B2B}|VideoManager.csproj|solutionrelative:models\\model.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{2B207946-4C41-4813-B28A-F160C15F6B2B}|VideoManager.csproj|c:\\users\\edward\\onedrive\\ramp\\ip-02\\new_ostrta\\tagmanager\\tagmanager\\tagmanager\\videomanager\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
-      "RelativeMoniker": "D:0:0:{2B207946-4C41-4813-B28A-F160C15F6B2B}|VideoManager.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{2B207946-4C41-4813-B28A-F160C15F6B2B}|VideoManager.csproj|c:\\users\\edward\\onedrive\\ramp\\ip-02\\new_ostrta\\tagmanager\\tagmanager\\tagmanager\\videomanager\\components\\pages\\weather.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{2B207946-4C41-4813-B28A-F160C15F6B2B}|VideoManager.csproj|solutionrelative:components\\pages\\weather.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{2B207946-4C41-4813-B28A-F160C15F6B2B}|VideoManager.csproj|c:\\users\\edward\\onedrive\\ramp\\ip-02\\new_ostrta\\tagmanager\\tagmanager\\tagmanager\\videomanager\\components\\pages\\tagmanager.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{2B207946-4C41-4813-B28A-F160C15F6B2B}|VideoManager.csproj|solutionrelative:components\\pages\\tagmanager.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2B207946-4C41-4813-B28A-F160C15F6B2B}|VideoManager.csproj|c:\\users\\edward\\onedrive\\ramp\\ip-02\\new_ostrta\\tagmanager\\tagmanager\\tagmanager\\videomanager\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2B207946-4C41-4813-B28A-F160C15F6B2B}|VideoManager.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2B207946-4C41-4813-B28A-F160C15F6B2B}|VideoManager.csproj|c:\\users\\edward\\onedrive\\ramp\\ip-02\\new_ostrta\\tagmanager\\tagmanager\\tagmanager\\videomanager\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{2B207946-4C41-4813-B28A-F160C15F6B2B}|VideoManager.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{2B207946-4C41-4813-B28A-F160C15F6B2B}|VideoManager.csproj|c:\\users\\edward\\onedrive\\ramp\\ip-02\\new_ostrta\\tagmanager\\tagmanager\\tagmanager\\videomanager\\components\\pages\\counter.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
@@ -42,11 +46,24 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 2,
           "Children": [
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\new_OSTRTA\\TagManager\\TagManager\\TagManager\\VideoManager\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\new_OSTRTA\\TagManager\\TagManager\\TagManager\\VideoManager\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAABoAAAAYAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-14T18:24:14.12Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -56,27 +73,27 @@
               "RelativeDocumentMoniker": "Models\\Model.cs",
               "ToolTip": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\new_OSTRTA\\TagManager\\TagManager\\TagManager\\VideoManager\\Models\\Model.cs",
               "RelativeToolTip": "Models\\Model.cs",
-              "ViewState": "AgIAAAsBAAAAAAAAAAAAABEBAAA2AAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAsAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2024-08-09T20:37:44.705Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "Counter.razor",
               "DocumentMoniker": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\new_OSTRTA\\TagManager\\TagManager\\TagManager\\VideoManager\\Components\\Pages\\Counter.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\Counter.razor",
               "ToolTip": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\new_OSTRTA\\TagManager\\TagManager\\TagManager\\VideoManager\\Components\\Pages\\Counter.razor",
               "RelativeToolTip": "Components\\Pages\\Counter.razor",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAZAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2024-10-05T19:53:04.716Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 2,
               "Title": "TagManager.razor",
               "DocumentMoniker": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\new_OSTRTA\\TagManager\\TagManager\\TagManager\\VideoManager\\Components\\Pages\\TagManager.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\TagManager.razor",
@@ -89,33 +106,33 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 1,
               "Title": "Weather.razor",
               "DocumentMoniker": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\new_OSTRTA\\TagManager\\TagManager\\TagManager\\VideoManager\\Components\\Pages\\Weather.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\Weather.razor",
               "ToolTip": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\new_OSTRTA\\TagManager\\TagManager\\TagManager\\VideoManager\\Components\\Pages\\Weather.razor",
               "RelativeToolTip": "Components\\Pages\\Weather.razor",
-              "ViewState": "AgIAADMAAAAAAAAAAAAMwEQAAAAhAAAAAAAAAA==",
+              "ViewState": "AgIAADMAAAAAAAAAAAAMwEsAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2024-08-14T12:52:54.564Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 8,
               "Title": "Editor.razor",
               "DocumentMoniker": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\new_OSTRTA\\TagManager\\TagManager\\TagManager\\VideoManager\\Components\\Pages\\Editor.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\Editor.razor",
               "ToolTip": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\new_OSTRTA\\TagManager\\TagManager\\TagManager\\VideoManager\\Components\\Pages\\Editor.razor",
               "RelativeToolTip": "Components\\Pages\\Editor.razor",
-              "ViewState": "AgIAADkAAAAAAAAAAAAAAEMAAAAIAAAAAAAAAA==",
+              "ViewState": "AgIAAKsAAAAAAAAAAAAUwLMAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2024-08-14T12:52:41.719Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 7,
               "Title": "NavMenu.razor",
               "DocumentMoniker": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\new_OSTRTA\\TagManager\\TagManager\\TagManager\\VideoManager\\Components\\Layout\\NavMenu.razor",
               "RelativeDocumentMoniker": "Components\\Layout\\NavMenu.razor",
@@ -128,26 +145,26 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 6,
               "Title": "NewExplorer.razor",
               "DocumentMoniker": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\new_OSTRTA\\TagManager\\TagManager\\TagManager\\VideoManager\\Components\\Pages\\NewExplorer.razor",
               "RelativeDocumentMoniker": "Components\\Pages\\NewExplorer.razor",
               "ToolTip": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\new_OSTRTA\\TagManager\\TagManager\\TagManager\\VideoManager\\Components\\Pages\\NewExplorer.razor",
               "RelativeToolTip": "Components\\Pages\\NewExplorer.razor",
-              "ViewState": "AgIAANgAAAAAAAAAAAAAAAUAAAAiAAAAAAAAAA==",
+              "ViewState": "AgIAAFQAAAAAAAAAAAAAAGMAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
               "WhenOpened": "2024-08-09T20:47:22.842Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 4,
               "Title": "appsettings.json",
               "DocumentMoniker": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\new_OSTRTA\\TagManager\\TagManager\\TagManager\\VideoManager\\appsettings.json",
               "RelativeDocumentMoniker": "appsettings.json",
               "ToolTip": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\new_OSTRTA\\TagManager\\TagManager\\TagManager\\VideoManager\\appsettings.json",
               "RelativeToolTip": "appsettings.json",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAABLAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
               "WhenOpened": "2024-08-09T20:40:14.232Z",
               "EditorCaption": ""

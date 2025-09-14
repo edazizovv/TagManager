@@ -1,3 +1,4 @@
+using Microsoft.Extensions.FileProviders;
 using VideoManager.Components;
 using VideoManager.Models;
 
@@ -18,6 +19,13 @@ builder.Services.AddSingleton<IPizzaTagService, PizzaTagService>();
 builder.Services.AddBlazorBootstrap();
 
 var app = builder.Build();
+
+var baseStorageFolder = builder.Configuration["BaseStorage"];
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(baseStorageFolder),
+    RequestPath = "/base"
+});
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

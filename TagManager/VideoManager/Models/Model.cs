@@ -23,16 +23,13 @@ namespace VideoManager.Models
 
     public class Pizza
     {
+        public string realm { get; set; }
         public int id { get; set; }
-        public string name { get; set; }
         public string _name { get; set; }
-        public string author { get; set; }
         public string _author { get; set; }
-        public string description { get; set; }
-        public string _description { get; set; }
-        public string link { get; set; }
-        public string _link { get; set; }
         public string thumbnail { get; set; }
+        public string _link { get; set; }
+
         public List<string> Tags { get; set; }
     }
 
@@ -184,8 +181,32 @@ namespace VideoManager.Models
                 List<Pizza> pizzaList = default!;
                 if (pizzaIds.Count > 0)
                 {
-                    var idSet = "(" + string.Join(", ", pizzaIds.Select(t => t)) + ")";
-                    pizzaList = await _dbService.GetAll<Pizza>("SELECT * FROM public.pizzas WHERE id IN " + idSet, new { });
+                    string idSet = "(" + string.Join(", ", pizzaIds.Select(t => t)) + ")";
+                    string pizzaQuery = "SELECT p.realm " + 
+                        "\t, p.\"id\" " +
+                        "\t, p.\"_name\" " +
+                        "\t, p._author " +
+                        "\t, '\\base\\' || r.name || '\\thmb\\' || p.thumbnail as thumbnail " + 
+                        "\t, p._link " +
+                        "FROM " + 
+                        "( " + 
+                        "SELECT realm " +
+                        "\t, \"id\" " + 
+                        "\t, \"_name\" " +
+                        "\t, _author " +
+                        "\t, thumbnail " +
+                        "\t, _link " +
+                        "FROM public.pizzas " +
+                        "WHERE id IN " + idSet +
+                        ") as p " + 
+                        "LEFT JOIN " + 
+                        "( " + 
+                        "SELECT * " + 
+                        "FROM public.accessories " +
+                        ") as r " + 
+                        "ON p.realm = r.name " + 
+                        ";";
+                    pizzaList = await _dbService.GetAll<Pizza>(pizzaQuery, new { });
                 }
                 else
                 {
@@ -195,7 +216,30 @@ namespace VideoManager.Models
             }
             else
             {
-                var pizzaList = await _dbService.GetAll<Pizza>("SELECT * FROM public.pizzas", new { });
+                string pizzaQuery = "SELECT p.realm " +
+                    "\t, p.\"id\" " +
+                    "\t, p.\"_name\" " +
+                    "\t, p._author " +
+                    "\t, '\\base\\' || r.name || '\\thmb\\' || p.thumbnail as thumbnail " +
+                    "\t, p._link " +
+                    "FROM " +
+                    "( " +
+                    "SELECT realm " +
+                    "\t, \"id\" " +
+                    "\t, \"_name\" " +
+                    "\t, _author " +
+                    "\t, thumbnail " +
+                    "\t, _link " +
+                    "FROM public.pizzas " +
+                    ") as p " +
+                    "LEFT JOIN " +
+                    "( " +
+                    "SELECT * " +
+                    "FROM public.accessories " +
+                    ") as r " +
+                    "ON p.realm = r.name " +
+                    ";";
+                var pizzaList = await _dbService.GetAll<Pizza>(pizzaQuery, new { });
                 return pizzaList;
             }
         }
@@ -204,7 +248,7 @@ namespace VideoManager.Models
         {
             // TODO: no updates to the pizzas' main fields should be applied, only some specific fields, TBD
             // not used ATM, let it be
-            var updatePizza = await _dbService.Update<int>("UPDATE public.pizzas SET name=@Name, description=@Description WHERE id=@Id", pizza);
+            var updatePizza = await _dbService.Update<int>("UPDATE public.pizzas SET name=@Name WHERE id=@Id", pizza);
             return pizza;
         }
 
