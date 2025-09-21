@@ -1,4 +1,5 @@
 using Microsoft.Extensions.FileProviders;
+using Microsoft.AspNetCore.Components;
 using VideoManager.Components;
 using VideoManager.Models;
 
@@ -8,7 +9,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddServerSideBlazor();
+builder.Services.AddControllers();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped(sp =>
+{
+    var navigationManager = sp.GetRequiredService<NavigationManager>();
+    return new HttpClient { BaseAddress = new Uri(navigationManager.BaseUri) };
+});
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-XSRF-TOKEN";
+});
+
 
 builder.Services.AddSingleton<IDbService, DbService>();
 builder.Services.AddSingleton<IPizzaService, PizzaService>();
@@ -36,10 +48,12 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseStaticFiles();
+app.UseRouting();
+app.UseAuthorization();
 app.UseAntiforgery();
 
+app.MapControllers();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

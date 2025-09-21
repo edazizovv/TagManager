@@ -4,6 +4,9 @@
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @inject ProtectedSessionStorage ProtectedSessionStore
 @inject IRealmService RealmService
+@inject HttpClient Http
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@inject IHttpClientFactory ClientFactory
 @rendermode InteractiveServer
 
 <PageTitle>Weather</PageTitle>
@@ -12,35 +15,46 @@
 
 <section>
 
-    <p> Block 1: Realm Editor </p>
+    <div style="display: flex;">
+        <div style="flex: 1; background: lightblue; padding: 10px;">
+            <p> Block 1: Realm Editor </p>
 
-    <EditForm EditContext="@editContext">
+            <EditForm EditContext="@editContext">
 
-        <DataAnnotationsValidator />
-        <ValidationSummary />
+                <DataAnnotationsValidator />
+                <ValidationSummary />
 
-        <div class="mb-3">
-            <label class="form-label">Realm Name:</label>
-            <InputText @bind-Value="currentRealm.name" Placeholder="Enter name" />
+                <div class="mb-3">
+                    <label class="form-label">Realm Name:</label>
+                    <InputText @bind-Value="currentRealm.name" Placeholder="Enter name" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Realm View:</label>
+                    <InputText @bind-Value="currentRealm.view" Placeholder="Enter view" />
+                </div>
+
+                @if (editContext.Validate())
+                {
+                    <Button @ref="addButton" Color="ButtonColor.Primary" @onclick="HandleButtonAddTagClick"> Add </Button>
+                    <Button @ref="deleteButton" Color="ButtonColor.Danger" @onclick="HandleButtonDeleteTagClick"> Delete </Button>
+                }
+                else
+                {
+                    <Button @ref="addButton" Color="ButtonColor.Secondary" Disabled="true"> Add </Button>
+                    <Button @ref="deleteButton" Color="ButtonColor.Secondary" Disabled="true"> Delete </Button>
+                }
+
+            </EditForm>
         </div>
+        <div style="flex: 1; background: lightgreen; padding: 10px;">
+            <p> Block 1a: Realm Management </p>
 
-        <div class="mb-3">
-            <label class="form-label">Realm View:</label>
-            <InputText @bind-Value="currentRealm.view" Placeholder="Enter view" />
-        </div>
-
-        @if (editContext.Validate())
-        {
-            <Button @ref="addButton" Color="ButtonColor.Primary" @onclick="HandleButtonAddTagClick"> Add </Button>
+            <InputFile OnChange="HandleInputConsumeClick" />
             <Button @ref="deleteButton" Color="ButtonColor.Danger" @onclick="HandleButtonDeleteTagClick"> Delete </Button>
-        }
-        else
-        {
-            <Button @ref="addButton" Color="ButtonColor.Secondary" Disabled="true"> Add </Button>
-            <Button @ref="deleteButton" Color="ButtonColor.Secondary" Disabled="true"> Delete </Button>
-        }
 
-    </EditForm>
+        </div>
+    </div>
 
 </section>
 
@@ -88,6 +102,10 @@
 
     private Button addButton = default!;
     private Button deleteButton = default!;
+
+    private Button consumeButton = default!;
+    private Button pumpButton = default!;
+    private Button dumpButton = default!;
 
     private bool isConnected;
 
@@ -140,6 +158,31 @@
         allRealms = await RealmService.GetRealmList();
 
         deleteButton.HideLoading();
+    }
+
+    private async Task HandleInputConsumeClick(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        using var reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024));
+        var content = await reader.ReadToEndAsync();
+
+        var tokenResponse = await Http.GetFromJsonAsync<AntiforgeryTokenDto>("/api/antiforgery/token");
+        var token = tokenResponse?.Token;
+
+        var requestMessage = new HttpRequestMessage(HttpMethod.Post, "/api/processfile");
+        requestMessage.Headers.Add("X-XSRF-TOKEN", token!);
+        requestMessage.Content = JsonContent.Create(new { FileContent = content });
+
+        var response = await Http.SendAsync(requestMessage);
+        var result = await response.Content.ReadFromJsonAsync<ResultDto>();
+
+        Console.WriteLine($"Python result: {result?.Result}");
+    }
+
+    public class ResultDto
+    {
+        public string Result { get; set; } = string.Empty;
     }
 
 }

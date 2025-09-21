@@ -6,6 +6,7 @@
 @inject IPizzaService PizzaService
 @inject ITagService TagService
 @inject IPizzaTagService PizzaTagService
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
 
@@ -106,6 +107,21 @@ else
 
                 <GridColumn TItem="Pizza" HeaderText="Name">
                     @context._name
+                </GridColumn>
+
+                <GridColumn TItem="Pizza" HeaderText="Link">
+                    <span>@context._link</span>
+                    <button class="btn btn-sm btn-outline-secondary ms-2"
+                            @onclick="() => CopyToClipboard(context._link)">
+                        Copy
+                    </button>
+                </GridColumn>
+
+                <GridColumn TItem="Pizza" HeaderText="Tags">
+                    @foreach (var tag in context.Tags)
+                    {
+                        <span class="badge bg-info text-dark me-1">@tag</span>
+                    }
                 </GridColumn>
 
             </GridColumns>
@@ -240,6 +256,11 @@ else
         currentSearchTagList = new List<string>();
 
         clearSearchButton.HideLoading();
+    }
+
+    private async Task CopyToClipboard(string text)
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
     }
 
 }

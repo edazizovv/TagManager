@@ -1,1 +1,28 @@
-[]
+[
+  {
+    "ContainingType": "AntiforgeryController",
+    "Method": "GetToken",
+    "RelativePath": "api/Antiforgery/token",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "VideoManager.Controllers.ProcessFileController",
+    "Method": "Post",
+    "RelativePath": "api/ProcessFile",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "VideoManager.Controllers.FileRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]

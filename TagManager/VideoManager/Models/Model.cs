@@ -11,6 +11,11 @@ using System.Collections.Generic;
 namespace VideoManager.Models
 {
 
+    public class AntiforgeryTokenDto
+    {
+        public string Token { get; set; } = string.Empty;
+    }
+
     public class Realm
     {
         [Required(ErrorMessage = "Name required")]
@@ -31,6 +36,18 @@ namespace VideoManager.Models
         public string _link { get; set; }
 
         public List<string> Tags { get; set; }
+    }
+
+    public class PizzaRow
+    {
+        public string realm { get; set; }
+        public int id { get; set; }
+        public string _name { get; set; }
+        public string _author { get; set; }
+        public string thumbnail { get; set; }
+        public string _link { get; set; }
+
+        public string? Tag { get; set; }
     }
 
     public class ShortTag
@@ -154,94 +171,70 @@ namespace VideoManager.Models
 
         public async Task<List<Pizza>> GetPizzaList(List<string> filterTags)
         {
-            if (filterTags.Count > 0)
-                {
-                var tagSet = "(" + string.Join(", ", filterTags.Select(t => "'" + t + "'")) + ")";
-                /*
-                string query = "SELECT x.id FROM " +
-                    "( " +
-                    "SELECT a.id " +
-                          ", a.n " +
-                    "FROM " +
-                    "( " +
-                    "SELECT b.id " +
-                         ", SUM(CASE WHEN b.tag IN " + tagSet + " THEN 1 ELSE 0 END) AS n " +
-                    "FROM public.pizzatag AS b " +
-                    "GROUP BY b.id " +
-                    ") AS a " +
-                    "WHERE a.n = @N " +
-                    ") AS x";
-                */
-                string query = "SELECT DISTINCT x.id " +
-                    "FROM public.pizzatag AS x " +
-                    "WHERE x.tag IN " + tagSet +
-                    ";";
-                var pizzaIds = await _dbService.GetAll<string>(
-                    query, new {  });
-                List<Pizza> pizzaList = default!;
-                if (pizzaIds.Count > 0)
-                {
-                    string idSet = "(" + string.Join(", ", pizzaIds.Select(t => t)) + ")";
-                    string pizzaQuery = "SELECT p.realm " + 
-                        "\t, p.\"id\" " +
-                        "\t, p.\"_name\" " +
-                        "\t, p._author " +
-                        "\t, '\\base\\' || r.name || '\\thmb\\' || p.thumbnail as thumbnail " + 
-                        "\t, p._link " +
-                        "FROM " + 
-                        "( " + 
-                        "SELECT realm " +
-                        "\t, \"id\" " + 
-                        "\t, \"_name\" " +
-                        "\t, _author " +
-                        "\t, thumbnail " +
-                        "\t, _link " +
-                        "FROM public.pizzas " +
-                        "WHERE id IN " + idSet +
-                        ") as p " + 
-                        "LEFT JOIN " + 
-                        "( " + 
-                        "SELECT * " + 
-                        "FROM public.accessories " +
-                        ") as r " + 
-                        "ON p.realm = r.name " + 
-                        ";";
-                    pizzaList = await _dbService.GetAll<Pizza>(pizzaQuery, new { });
-                }
-                else
-                {
-                    pizzaList = default!;
-                }
-                return pizzaList;
+
+            string baseQuery = @"
+                SELECT p.id
+                     , p._name
+                     , p._author
+                     , '\base\' || r.name || '\thmb\' || p.thumbnail AS thumbnail
+                     , p._link
+                     , t.tag
+                FROM 
+                public.pizzas AS p
+                LEFT JOIN 
+                public.accessories AS r 
+                ON 
+                p.realm = r.name
+                LEFT JOIN 
+                public.pizzatag AS t 
+                ON 
+                p.id = t.id
+            ";
+
+            
+            IEnumerable<PizzaRow> pizzaRows;
+
+            if (filterTags != null && filterTags.Count > 0)
+            {
+
+                var tagSet = "(" + string.Join(", ", filterTags.Select(t => $"'{t}'")) + ")";
+                int tagCount = filterTags.Count;
+
+                string filteredQuery = baseQuery + $@"
+                    WHERE p.id IN (
+                        SELECT x.id
+                        FROM public.pizzatag AS x
+                        WHERE x.tag IN {tagSet}
+                        GROUP BY x.id
+                        HAVING COUNT(DISTINCT x.tag) = {tagCount}
+                    )
+                ";
+
+                pizzaRows = await _dbService.GetAll<PizzaRow>(filteredQuery, new { });
+
             }
             else
             {
-                string pizzaQuery = "SELECT p.realm " +
-                    "\t, p.\"id\" " +
-                    "\t, p.\"_name\" " +
-                    "\t, p._author " +
-                    "\t, '\\base\\' || r.name || '\\thmb\\' || p.thumbnail as thumbnail " +
-                    "\t, p._link " +
-                    "FROM " +
-                    "( " +
-                    "SELECT realm " +
-                    "\t, \"id\" " +
-                    "\t, \"_name\" " +
-                    "\t, _author " +
-                    "\t, thumbnail " +
-                    "\t, _link " +
-                    "FROM public.pizzas " +
-                    ") as p " +
-                    "LEFT JOIN " +
-                    "( " +
-                    "SELECT * " +
-                    "FROM public.accessories " +
-                    ") as r " +
-                    "ON p.realm = r.name " +
-                    ";";
-                var pizzaList = await _dbService.GetAll<Pizza>(pizzaQuery, new { });
-                return pizzaList;
+                pizzaRows = await _dbService.GetAll<PizzaRow>(baseQuery, new { });
             }
+
+            List<Pizza> pizzaList = pizzaRows
+                .GroupBy(r => new { r.id, r._name, r._author, r._link, r.thumbnail })
+                .Select(g => new Pizza
+                {
+                    id = g.Key.id,
+                    _name = g.Key._name,
+                    _author = g.Key._author,
+                    _link = g.Key._link,
+                    thumbnail = g.Key.thumbnail,
+                    Tags = g.Where(r => r.Tag != null)
+                            .Select(r => r.Tag!)
+                            .Distinct()
+                            .ToList()
+                })
+                .ToList();
+
+            return pizzaList;
         }
 
         public async Task<Pizza> UpdatePizza(Pizza pizza)
