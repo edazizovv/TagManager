@@ -34,16 +34,40 @@
                     <InputText @bind-Value="currentRealm.view" Placeholder="Enter view" />
                 </div>
 
-                @if (editContext.Validate())
+                <div class="mb-3">
+                    <label class="form-label">Realm Action:</label>
+                    <InputSelect @bind-Value="currentRealm.DefaultAction">
+                        @foreach (ExplorerDefaultAction action in Enum.GetValues(typeof(ExplorerDefaultAction)))
+                        {
+                            <option value="@action">@action</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                @if (currentRealm.DefaultAction == ExplorerDefaultAction.OpenLink)
                 {
-                    <Button @ref="addButton" Color="ButtonColor.Primary" @onclick="HandleButtonAddTagClick"> Add </Button>
-                    <Button @ref="deleteButton" Color="ButtonColor.Danger" @onclick="HandleButtonDeleteTagClick"> Delete </Button>
+
+                    <div class="mb-3">
+                        <label class="form-label">Realm App:</label>
+                        <InputText @bind-Value="currentRealm.PreferredApp"
+                                   placeholder="com.myapp.handler" />
+                    </div>
+
                 }
-                else
-                {
-                    <Button @ref="addButton" Color="ButtonColor.Secondary" Disabled="true"> Add </Button>
-                    <Button @ref="deleteButton" Color="ButtonColor.Secondary" Disabled="true"> Delete </Button>
-                }
+
+                <Button Color="ButtonColor.Primary"
+                        Disabled="@(!formIsValid)"
+                        @ref=addButton
+                        @onclick="HandleButtonAddTagClick">
+                    Add / Update
+                </Button>
+
+                <Button Color="ButtonColor.Danger"
+                        Disabled="@(!formIsValid)"
+                        @ref=deleteButton
+                        @onclick="HandleButtonDeleteTagClick">
+                    Delete
+                </Button>
 
             </EditForm>
         </div>
@@ -107,11 +131,14 @@
     private Button pumpButton = default!;
     private Button dumpButton = default!;
 
+    private bool formIsValid = false;
+
     private bool isConnected;
 
     protected override void OnInitialized()
     {
         editContext = new EditContext(currentRealm);
+        editContext.OnValidationStateChanged += HandleValidationChanged;
         base.OnInitialized();
     }
 
@@ -133,7 +160,14 @@
 
     private async Task OnRowClick(GridRowEventArgs<Realm> args)
     {
-        currentRealm = args.Item;
+        var r = args.Item;
+
+        currentRealm.name = r.name;
+        currentRealm.view = r.view;
+        currentRealm.DefaultAction = r.DefaultAction;
+        currentRealm.PreferredApp = r.PreferredApp;
+
+        editContext.Validate();
     }
 
     private async Task HandleButtonAddTagClick()
@@ -141,7 +175,7 @@
         addButton.ShowLoading("Adding...");
 
         // await Task.Delay(1000);
-        await RealmService.CreateRealm(currentRealm.name, currentRealm.view);
+        await RealmService.AddOrUpdateRealm(currentRealm.name, currentRealm.view, currentRealm.DefaultAction, currentRealm.PreferredApp);
 
         allRealms = await RealmService.GetRealmList();
 
@@ -178,6 +212,12 @@
         var result = await response.Content.ReadFromJsonAsync<ResultDto>();
 
         Console.WriteLine($"Python result: {result?.Result}");
+    }
+
+    private void HandleValidationChanged(object? sender, ValidationStateChangedEventArgs e)
+    {
+        formIsValid = !editContext.GetValidationMessages().Any();
+        StateHasChanged();
     }
 
     public class ResultDto

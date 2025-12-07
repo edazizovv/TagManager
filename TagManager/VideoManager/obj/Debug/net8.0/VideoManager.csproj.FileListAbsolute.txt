@@ -131,3 +131,5 @@ C:\Users\Edward\OneDrive\RAMP\IP-02\new_OSTRTA\TagManager\TagManager\TagManager\
 C:\Users\Edward\OneDrive\RAMP\IP-02\new_OSTRTA\TagManager\TagManager\TagManager\VideoManager\obj\Debug\net8.0\staticwebassets.build.json.cache
 C:\Users\Edward\OneDrive\RAMP\IP-02\new_OSTRTA\TagManager\TagManager\TagManager\VideoManager\obj\Debug\net8.0\staticwebassets.build.endpoints.json
 C:\Users\Edward\OneDrive\RAMP\IP-02\new_OSTRTA\TagManager\TagManager\TagManager\VideoManager\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
+C:\Users\Edward\OneDrive\RAMP\IP-02\new_OSTRTA\TagManager\TagManager\TagManager\VideoManager\obj\Debug\net8.0\VideoManager.RazorAssemblyInfo.cache
+C:\Users\Edward\OneDrive\RAMP\IP-02\new_OSTRTA\TagManager\TagManager\TagManager\VideoManager\obj\Debug\net8.0\VideoManager.RazorAssemblyInfo.cs

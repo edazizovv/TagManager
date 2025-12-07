@@ -11,6 +11,13 @@ using System.Collections.Generic;
 namespace VideoManager.Models
 {
 
+    public enum ExplorerDefaultAction
+    {
+        None = 0,
+        CopyValue = 1,
+        OpenLink = 2
+    }
+
     public class AntiforgeryTokenDto
     {
         public string Token { get; set; } = string.Empty;
@@ -24,11 +31,16 @@ namespace VideoManager.Models
         [Required(ErrorMessage = "View required")]
         [RegularExpression("^[a-zA-Z_:\\\\]{3,100}$", ErrorMessage = "String must contain only a-z literals or underscore or slashes and be 3-100 characters length")]
         public string view { get; set; }
+        [Range(1, int.MaxValue, ErrorMessage = "Default action is required.")]
+        public ExplorerDefaultAction DefaultAction { get; set; } = ExplorerDefaultAction.None;
+        public string? PreferredApp { get; set; }
     }
 
     public class Pizza
     {
         public string realm { get; set; }
+        public ExplorerDefaultAction DefaultAction { get; set; }
+        public string PreferredApp { get; set; }
         public int id { get; set; }
         public string _name { get; set; }
         public string _author { get; set; }
@@ -41,6 +53,8 @@ namespace VideoManager.Models
     public class PizzaRow
     {
         public string realm { get; set; }
+        public ExplorerDefaultAction DefaultAction { get; set; }
+        public string PreferredApp { get; set; }
         public int id { get; set; }
         public string _name { get; set; }
         public string _author { get; set; }
@@ -173,7 +187,10 @@ namespace VideoManager.Models
         {
 
             string baseQuery = @"
-                SELECT p.id
+                SELECT p.realm
+                     , r.default_action
+                     , r.preferred_app
+                     , p.id
                      , p._name
                      , p._author
                      , '\base\' || r.name || '\thmb\' || p.thumbnail AS thumbnail
@@ -219,9 +236,12 @@ namespace VideoManager.Models
             }
 
             List<Pizza> pizzaList = pizzaRows
-                .GroupBy(r => new { r.id, r._name, r._author, r._link, r.thumbnail })
+                .GroupBy(r => new { r.realm, r.DefaultAction, r.PreferredApp, r.id, r._name, r._author, r._link, r.thumbnail })
                 .Select(g => new Pizza
                 {
+                    realm = g.Key.realm,
+                    DefaultAction = g.Key.DefaultAction,
+                    PreferredApp = g.Key.PreferredApp,
                     id = g.Key.id,
                     _name = g.Key._name,
                     _author = g.Key._author,
@@ -292,7 +312,7 @@ namespace VideoManager.Models
 
     public interface IRealmService
     {
-        public Task<bool> CreateRealm(string realmName, string realmView);
+        public Task<bool> AddOrUpdateRealm(string realmName, string realmView, ExplorerDefaultAction defaultAction, string? preferredApp);
         public Task<List<Realm>> GetRealmList();
         public Task<bool> DeleteRealm(string realmName);
     }
@@ -306,13 +326,36 @@ namespace VideoManager.Models
             _dbService = dbService;
         }
 
-        public async Task<bool> CreateRealm(string realmName, string realmView)
+        public async Task<bool> AddOrUpdateRealm(string realmName, string realmView, ExplorerDefaultAction defaultAction, string? preferredApp)
         {
-            var result = await _dbService.Insert<int>(
-                "INSERT INTO public.accessories (name, view) " + 
-                "VALUES (@RealmName, @RealmView)", 
-                new { RealmName = realmName, RealmView = realmView }
-                );
+            string baseQuery = @"
+                SELECT *
+                FROM public.accessories
+                WHERE name = @name
+                ;
+            ";
+            var realmList = await _dbService.GetAll<Realm>(baseQuery, new { name = realmName });
+            if (realmList.Count() == 1)
+            {
+                var updateQuery = @"
+                    UPDATE public.accessories
+                    SET view = @RealmView, default_action = @DefaultAction, preferred_app = @PreferredApp
+                    WHERE name = @RealmName
+                    ;
+                ";
+                var result = await _dbService.Update<int>(
+                    updateQuery,
+                    new { RealmName = realmName, RealmView = realmView, DefaultAction = defaultAction, PreferredApp = preferredApp }
+                    );
+            }
+            else
+            {
+                var result = await _dbService.Insert<int>(
+                    "INSERT INTO public.accessories (name, view, default_action, preferred_app) " +
+                    "VALUES (@RealmName, @RealmView, @DefaultAction, @PreferredApp)",
+                    new { RealmName = realmName, RealmView = realmView, DefaultAction = defaultAction, PreferredApp = preferredApp }
+                    );
+            }
             return true;
         }
 

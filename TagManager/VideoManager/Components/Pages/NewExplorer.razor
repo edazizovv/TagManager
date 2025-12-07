@@ -9,6 +9,9 @@
 @inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
+<HeadContent>
+    <script src="js/site.js"></script>
+</HeadContent>
 
 @if (!isConnected)
 {
@@ -109,14 +112,6 @@ else
                     @context._name
                 </GridColumn>
 
-                <GridColumn TItem="Pizza" HeaderText="Link">
-                    <span>@context._link</span>
-                    <button class="btn btn-sm btn-outline-secondary ms-2"
-                            @onclick="() => CopyToClipboard(context._link)">
-                        Copy
-                    </button>
-                </GridColumn>
-
                 <GridColumn TItem="Pizza" HeaderText="Tags">
                     @foreach (var tag in context.Tags)
                     {
@@ -196,6 +191,20 @@ else
         currentPizza = args.Item;
         currentPizza.Tags = await PizzaTagService.GetTags(currentPizza.id);
         currentTag.Id = currentPizza.id;
+
+        switch (currentPizza.DefaultAction)
+        {
+            case ExplorerDefaultAction.CopyValue:
+                await CopyToClipboard(currentPizza._link);
+                break;
+            case ExplorerDefaultAction.OpenLink:
+                string uri = "//" + currentPizza._link + "/content/" + currentPizza.id;
+                await JSRuntime.InvokeVoidAsync("openLink", uri, currentPizza.PreferredApp);
+                break;
+            case ExplorerDefaultAction.None:
+            default:
+                break;
+        }
     }
 
     protected void HandleDropDownSelection(int i)
