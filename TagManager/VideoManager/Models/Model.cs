@@ -41,6 +41,7 @@ namespace VideoManager.Models
         public string realm { get; set; }
         public ExplorerDefaultAction DefaultAction { get; set; }
         public string PreferredApp { get; set; }
+        public string StoragePath { get; set; }
         public int id { get; set; }
         public string _name { get; set; }
         public string _author { get; set; }
@@ -55,6 +56,7 @@ namespace VideoManager.Models
         public string realm { get; set; }
         public ExplorerDefaultAction DefaultAction { get; set; }
         public string PreferredApp { get; set; }
+        public string StoragePath { get; set; }
         public int id { get; set; }
         public string _name { get; set; }
         public string _author { get; set; }
@@ -188,14 +190,15 @@ namespace VideoManager.Models
 
             string baseQuery = @"
                 SELECT p.realm
-                     , r.default_action
-                     , r.preferred_app
+                     , r.default_action as DefaultAction
+                     , r.preferred_app as PreferredApp
+                     , r.view as StoragePath
                      , p.id
                      , p._name
                      , p._author
                      , '\base\' || r.name || '\thmb\' || p.thumbnail AS thumbnail
                      , p._link
-                     , t.tag
+                     , coalesce(t.tag, 'nope') as tag
                 FROM 
                 public.pizzas AS p
                 LEFT JOIN 
@@ -220,7 +223,24 @@ namespace VideoManager.Models
                 string filteredQuery = baseQuery + $@"
                     WHERE p.id IN (
                         SELECT x.id
-                        FROM public.pizzatag AS x
+                        FROM 
+                        (
+                        SELECT z.id
+                             , z.tag
+                        FROM public.pizzatag AS z
+                        UNION 
+                        (
+                        SELECT DISTINCT p.id
+                                      , 'nope' as tag
+                        FROM 
+                        public.pizzas AS p
+                        LEFT JOIN
+                        public.pizzatag AS t 
+                        ON 
+                        p.id = t.id
+                        WHERE t.tag IS NULL
+                        )
+                        ) AS x
                         WHERE x.tag IN {tagSet}
                         GROUP BY x.id
                         HAVING COUNT(DISTINCT x.tag) = {tagCount}
@@ -236,12 +256,13 @@ namespace VideoManager.Models
             }
 
             List<Pizza> pizzaList = pizzaRows
-                .GroupBy(r => new { r.realm, r.DefaultAction, r.PreferredApp, r.id, r._name, r._author, r._link, r.thumbnail })
+                .GroupBy(r => new { r.realm, r.DefaultAction, r.PreferredApp, r.StoragePath, r.id, r._name, r._author, r._link, r.thumbnail })
                 .Select(g => new Pizza
                 {
                     realm = g.Key.realm,
                     DefaultAction = g.Key.DefaultAction,
                     PreferredApp = g.Key.PreferredApp,
+                    StoragePath = g.Key.StoragePath,
                     id = g.Key.id,
                     _name = g.Key._name,
                     _author = g.Key._author,
@@ -299,6 +320,7 @@ namespace VideoManager.Models
         public async Task<List<string>> GetTagList()
         {
             var tagList = await _dbService.GetAll<string>("SELECT * FROM public.tags", new { });
+            tagList.Add("nope");
             return tagList;
         }
 

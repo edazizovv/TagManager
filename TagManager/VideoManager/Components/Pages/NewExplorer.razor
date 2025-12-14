@@ -198,7 +198,7 @@ else
                 await CopyToClipboard(currentPizza._link);
                 break;
             case ExplorerDefaultAction.OpenLink:
-                string uri = "//" + currentPizza._link + "/content/" + currentPizza.id;
+                string uri = currentPizza.PreferredApp + "://" + currentPizza.StoragePath + "/content/" + currentPizza._link;
                 await JSRuntime.InvokeVoidAsync("openLink", uri, currentPizza.PreferredApp);
                 break;
             case ExplorerDefaultAction.None:
