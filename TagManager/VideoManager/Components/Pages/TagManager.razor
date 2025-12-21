@@ -112,7 +112,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        List<string> availableTagsQueried = await TagService.GetTagList();
+        // TODO: to be reolved once realm-specific tags are introduced
+        List<string> availableTagsQueried = await TagService.GetTagList("");
 
         availableTags = new List<ShortTag>();
         foreach (string element in availableTagsQueried)
@@ -150,9 +151,14 @@ else
         addButton.ShowLoading("Adding...");
 
         // await Task.Delay(1000);
-        await TagService.CreateTag(currentTag.Value);
+        ShortTag tagToCreate = new ShortTag
+        {
+            Value = currentTag.Value
+        };
+        await TagService.CreateTag(tagToCreate);
 
-        List<string> availableTagsQueried = await TagService.GetTagList();
+        // TODO: to be reolved once realm-specific tags are introduced
+        List<string> availableTagsQueried = await TagService.GetTagList("");
 
         availableTags = new List<ShortTag>();
         foreach (string element in availableTagsQueried)
@@ -169,9 +175,14 @@ else
         deleteButton.ShowLoading("Deleting...");
 
         // await Task.Delay(1000);
-        await TagService.DeleteTag(currentTag.Value);
+        ShortTag tagToCreate = new ShortTag
+        {
+            Value = currentTag.Value
+        };
+        await TagService.DeleteTag(tagToCreate);
         
-        List<string> availableTagsQueried = await TagService.GetTagList();
+        // TODO: to be reolved once realm-specific tags are introduced
+        List<string> availableTagsQueried = await TagService.GetTagList("");
 
         availableTags = new List<ShortTag>();
         foreach (string element in availableTagsQueried)

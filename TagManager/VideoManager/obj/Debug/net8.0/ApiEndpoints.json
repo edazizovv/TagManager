@@ -10,6 +10,37 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "VideoManager.Controllers.ExportAllController",
+    "Method": "Download",
+    "RelativePath": "api/export_all",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "VideoManager.Controllers.ExportSingleController",
+    "Method": "Download",
+    "RelativePath": "api/export_single",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "realm",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "view",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "VideoManager.Controllers.ProcessFileController",
     "Method": "Post",
     "RelativePath": "api/ProcessFile",

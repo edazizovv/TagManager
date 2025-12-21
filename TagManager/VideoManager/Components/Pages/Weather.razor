@@ -1,12 +1,19 @@
 ﻿@page "/weather"
 @using VideoManager.Models
 @using System.ComponentModel.DataAnnotations
+@using System.IO.Compression
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using CsvHelper
+@using System.Globalization
 @inject ProtectedSessionStorage ProtectedSessionStore
 @inject IRealmService RealmService
+@inject IPizzaService PizzaService
+@inject IPizzaTagService PizzaTagService
+@inject ITagService TagService
 @inject HttpClient Http
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 @inject IHttpClientFactory ClientFactory
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
 <PageTitle>Weather</PageTitle>
@@ -18,6 +25,15 @@
     <div style="display: flex;">
         <div style="flex: 1; background: lightblue; padding: 10px;">
             <p> Block 1: Realm Editor </p>
+
+            <InputFile OnChange="HandleInputConsumeClick" />
+
+            <Button Color="ButtonColor.Warning"
+                    Disabled="@(string.IsNullOrEmpty(selectedRealmFileName) || (selectedRealmFile == null))"
+                    @ref=importRealmButton
+                    @onclick="HandleButtonImportRealmClick">
+                Import Realm
+            </Button>
 
             <EditForm EditContext="@editContext">
 
@@ -62,20 +78,37 @@
                     Add / Update
                 </Button>
 
+                <Button Color="ButtonColor.Success"
+                        Disabled="@(!formIsValid)"
+                        @ref=exportButton
+                        @onclick="HandleButtonExportRealmClick">
+                    Export Realm
+                </Button>
+
                 <Button Color="ButtonColor.Danger"
                         Disabled="@(!formIsValid)"
                         @ref=deleteButton
                         @onclick="HandleButtonDeleteTagClick">
-                    Delete
+                    Delete Record
                 </Button>
 
             </EditForm>
         </div>
         <div style="flex: 1; background: lightgreen; padding: 10px;">
-            <p> Block 1a: Realm Management </p>
+            <p> Block 1a: All Realms </p>
 
             <InputFile OnChange="HandleInputConsumeClick" />
-            <Button @ref="deleteButton" Color="ButtonColor.Danger" @onclick="HandleButtonDeleteTagClick"> Delete </Button>
+            <Button Color="ButtonColor.Warning"
+                    Disabled="@(string.IsNullOrEmpty(selectedRealmFileName) || (selectedRealmFile == null))"
+                    @ref=importAllButton
+                    @onclick="HandleButtonImportAllClick">
+                Import All
+            </Button>
+            <Button Color="ButtonColor.Success"
+                    @ref="exportAllButton"
+                    @onclick="HandleButtonExportAllClick">
+                Export All
+            </Button>
 
         </div>
     </div>
@@ -122,10 +155,18 @@
     private Realm currentRealm = new Realm();
     private List<Realm> allRealms = default!;
 
+    private string? selectedRealmFileName;
+    private IBrowserFile? selectedRealmFile;
+    private MemoryStream? selectedRealmZip;
+
     private EditContext editContext = default!;
 
+    private Button importRealmButton = default!;
     private Button addButton = default!;
+    private Button exportButton = default!;
     private Button deleteButton = default!;
+    private Button importAllButton = default!;
+    private Button exportAllButton = default!;
 
     private Button consumeButton = default!;
     private Button pumpButton = default!;
@@ -170,16 +211,163 @@
         editContext.Validate();
     }
 
+    private async Task HandleButtonImportRealmClick()
+    {
+
+        if (selectedRealmZip is null)
+            return;
+
+        selectedRealmZip.Position = 0;
+
+        using var archive = new ZipArchive(selectedRealmZip, ZipArchiveMode.Read);
+
+        IEnumerable<ShortTag>? tagRecords = null;
+        IEnumerable<Realm>? realmRecords = null;
+        IEnumerable<EmptyPizza>? pizzaRecords = null;
+        IEnumerable<PizzaTag>? pizzaTagRecords = null;
+
+        foreach (var entry in archive.Entries)
+        {
+            // entry.FullName  -> path inside zip
+            // entry.Name      -> file name only
+
+            switch (entry.FullName)
+            {
+                case "tags.csv":
+
+                    {
+
+                        using var entryStream = entry.Open();
+                        using var reader = new StreamReader(entryStream);
+                        using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+
+                        tagRecords = csv.GetRecords<ShortTag>().ToList();
+
+                        break;
+
+                    }
+
+                case "realms.csv":
+
+                    {
+
+                        using var entryStream = entry.Open();
+                        using var reader = new StreamReader(entryStream);
+                        using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+
+                        realmRecords = csv.GetRecords<Realm>().ToList();
+
+                        break;
+
+                    }
+
+                default:
+                    {
+                        bool subfolderCheck =
+                            entry.FullName.StartsWith(currentRealm.name + "/thmb/") ||
+                            entry.FullName.StartsWith(currentRealm.name + "/cntn/");
+                        if (subfolderCheck && (!string.IsNullOrEmpty(entry.Name)))
+                        {
+                            var destinationPath = Path.Combine(currentRealm.view,
+                                                               entry.FullName.Replace('/', Path.DirectorySeparatorChar));
+
+                            Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
+
+                            using var entryStream = entry.Open();
+                            using var fileStream = File.Create(destinationPath);
+                            await entryStream.CopyToAsync(fileStream);
+                        }
+                        else if (entry.FullName.StartsWith(currentRealm.name) && (entry.Name) == "tab.csv")
+                        {
+
+                            using var entryStream = entry.Open();
+                            using var reader = new StreamReader(entryStream);
+                            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+
+                            pizzaRecords = csv.GetRecords<EmptyPizza>().ToList();
+
+                            break;
+
+                        }
+                        else if (entry.FullName.StartsWith(currentRealm.name) && (entry.Name) == "tag.csv")
+                        {
+
+                            using var entryStream = entry.Open();
+                            using var reader = new StreamReader(entryStream);
+                            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+
+                            pizzaTagRecords = csv.GetRecords<PizzaTag>().ToList();
+
+                            break;
+
+                        }
+
+                        break;
+                    }
+            }
+        }
+
+        if (tagRecords != null)
+        {
+            foreach (var record in tagRecords)
+            {
+                await TagService.CreateTag(record);
+            }
+        }
+
+        if (realmRecords != null)
+        {
+            foreach (var record in realmRecords)
+            {
+                await RealmService.AddOrUpdateRealm(record);
+            }
+        }
+
+        if (pizzaRecords != null)
+        {
+            foreach (var record in pizzaRecords)
+            {
+                await PizzaService.CreatePizza(record);
+            }
+        }
+
+        if (pizzaTagRecords != null)
+        {
+            foreach (var record in pizzaTagRecords)
+            {
+                await PizzaTagService.CreateTag(record);
+            }
+        }
+    }
+
     private async Task HandleButtonAddTagClick()
     {
         addButton.ShowLoading("Adding...");
 
         // await Task.Delay(1000);
-        await RealmService.AddOrUpdateRealm(currentRealm.name, currentRealm.view, currentRealm.DefaultAction, currentRealm.PreferredApp);
+        Realm addOrUpdateRealm = new Realm
+            {
+                name = currentRealm.name,
+                view = currentRealm.view,
+                DefaultAction = currentRealm.DefaultAction,
+                PreferredApp = currentRealm.PreferredApp
+            };
+        await RealmService.AddOrUpdateRealm(addOrUpdateRealm);
 
         allRealms = await RealmService.GetRealmList();
 
         addButton.HideLoading();
+    }
+
+    private async Task HandleButtonExportRealmClick()
+    {
+        var realm = currentRealm.name;
+        var view = currentRealm.view;
+
+        await JSRuntime.InvokeVoidAsync(
+            "open",
+            $"/api/export_single?realm={Uri.EscapeDataString(realm)}&view={Uri.EscapeDataString(view)}",
+            "_blank");
     }
 
     private async Task HandleButtonDeleteTagClick()
@@ -196,7 +384,19 @@
 
     private async Task HandleInputConsumeClick(InputFileChangeEventArgs e)
     {
-        var file = e.File;
+
+        selectedRealmFile = e.File;
+        selectedRealmFileName = selectedRealmFile.Name;
+
+        selectedRealmZip = new MemoryStream();
+
+        await using var uploadStream =
+            selectedRealmFile.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024);
+
+        await uploadStream.CopyToAsync(selectedRealmZip);
+        selectedRealmZip.Position = 0;
+
+        /*
 
         using var reader = new StreamReader(file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024));
         var content = await reader.ReadToEndAsync();
@@ -212,6 +412,8 @@
         var result = await response.Content.ReadFromJsonAsync<ResultDto>();
 
         Console.WriteLine($"Python result: {result?.Result}");
+
+        */
     }
 
     private void HandleValidationChanged(object? sender, ValidationStateChangedEventArgs e)
@@ -223,6 +425,168 @@
     public class ResultDto
     {
         public string Result { get; set; } = string.Empty;
+    }
+
+    private async Task HandleButtonImportAllClick()
+    {
+
+        importAllButton.ShowLoading("Importing...");
+
+        if (selectedRealmZip is null)
+            return;
+
+        selectedRealmZip.Position = 0;
+
+        using var archive = new ZipArchive(selectedRealmZip, ZipArchiveMode.Read);
+
+        IEnumerable<ShortTag>? tagRecords = null;
+        IEnumerable<Realm>? realmRecords = null;
+        IEnumerable<EmptyPizza>? pizzaRecords = null;
+        IEnumerable<PizzaTag>? pizzaTagRecords = null;
+
+        foreach (var entry in archive.Entries)
+        {
+            // entry.FullName  -> path inside zip
+            // entry.Name      -> file name only
+
+            switch (entry.FullName)
+            {
+                case "tags.csv":
+
+                    {
+
+                        using var entryStream = entry.Open();
+                        using var reader = new StreamReader(entryStream);
+                        using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+
+                        tagRecords = csv.GetRecords<ShortTag>().ToList();
+
+                        break;
+
+                    }
+
+                case "realms.csv":
+
+                    {
+
+                        using var entryStream = entry.Open();
+                        using var reader = new StreamReader(entryStream);
+                        using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+
+                        realmRecords = csv.GetRecords<Realm>().ToList();
+
+                        break;
+
+                    }
+
+                default:
+                    break;
+            }
+        }
+
+        if (tagRecords != null)
+        {
+            foreach (var record in tagRecords)
+            {
+                await TagService.CreateTag(record);
+            }
+        }
+
+        if (realmRecords != null)
+        {
+            foreach (var record in realmRecords)
+            {
+                await RealmService.AddOrUpdateRealm(record);
+            }
+        }
+
+        List<string> realmNames = realmRecords?
+            .Select(r => r.name)
+            .ToList()
+            ?? new List<string>();
+
+        foreach (var entry in archive.Entries)
+        {
+            // entry.FullName  -> path inside zip
+            // entry.Name      -> file name only
+
+            var matchedFoldersRealm = realmNames.FirstOrDefault(r =>
+                entry.FullName.StartsWith(r + "/thmb/") ||
+                entry.FullName.StartsWith(r + "/cntn/"));
+            var matchedFilesRealm = realmNames.FirstOrDefault(r =>
+                entry.FullName.StartsWith(r + "/tab.csv") ||
+                entry.FullName.StartsWith(r + "/tag.csv"));
+            var matchedRealmObj = realmRecords.FirstOrDefault(r => r.name == matchedFoldersRealm);
+            if (((matchedFoldersRealm == null) || (matchedRealmObj == null)) && (matchedFilesRealm == null))
+                continue;
+
+            if ((matchedFoldersRealm != null) && (!string.IsNullOrEmpty(entry.Name)))
+            {
+                string targetDir = Path.GetDirectoryName(matchedRealmObj.view);
+
+                var destinationPath = Path.Combine(targetDir,
+                                                    entry.FullName.Replace('/', Path.DirectorySeparatorChar));
+
+                Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
+
+                using var entryStream = entry.Open();
+                using var fileStream = File.Create(destinationPath);
+                await entryStream.CopyToAsync(fileStream);
+                continue;
+            }
+            else if (entry.FullName.StartsWith(matchedFilesRealm) && (entry.Name) == "tab.csv")
+            {
+
+                using var entryStream = entry.Open();
+                using var reader = new StreamReader(entryStream);
+                using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+
+                pizzaRecords = csv.GetRecords<EmptyPizza>().ToList();
+
+
+                if (pizzaRecords != null)
+                {
+                    foreach (var record in pizzaRecords)
+                    {
+                        await PizzaService.CreatePizza(record);
+                    }
+                }
+                 continue;
+
+            }
+            else if (entry.FullName.StartsWith(matchedFilesRealm) && (entry.Name) == "tag.csv")
+            {
+
+                using var entryStream = entry.Open();
+                using var reader = new StreamReader(entryStream);
+                using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+
+                pizzaTagRecords = csv.GetRecords<PizzaTag>().ToList();
+
+                if (pizzaTagRecords != null)
+                {
+                    foreach (var record in pizzaTagRecords)
+                    {
+                        await PizzaTagService.CreateTag(record);
+                    }
+                }
+                continue;
+
+            }
+
+        }
+
+        importAllButton.HideLoading();
+
+    }
+
+    private async Task HandleButtonExportAllClick()
+    {
+
+        await JSRuntime.InvokeVoidAsync(
+            "open",
+            $"/api/export_all",
+            "_blank");
     }
 
 }

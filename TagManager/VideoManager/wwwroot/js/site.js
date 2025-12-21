@@ -1,7 +1,3 @@
-﻿window.openLink = (url, app) => {
-    if (app && app.length > 0) {
-        window.location.href = `${app}:${url}`;
-    } else {
-        window.open(url, "_blank");
-    }
+﻿window.openLink = function (uri) {
+    window.open(uri, "_blank");
 };

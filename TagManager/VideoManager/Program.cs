@@ -27,6 +27,8 @@ builder.Services.AddSingleton<IPizzaService, PizzaService>();
 builder.Services.AddSingleton<IRealmService, RealmService>();
 builder.Services.AddSingleton<ITagService, TagService>();
 builder.Services.AddSingleton<IPizzaTagService, PizzaTagService>();
+builder.Services.AddSingleton<IExportSingleRealmService, ExportSingleService>();
+builder.Services.AddSingleton<IExportAllRealmService, ExportAllService>();
 
 builder.Services.AddBlazorBootstrap();
 

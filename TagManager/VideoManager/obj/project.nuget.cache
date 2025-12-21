@@ -1,10 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "3e0GqKU4B4U=",
+  "dgSpecHash": "va2IWClpBVE=",
   "success": true,
   "projectFilePath": "C:\\Users\\Edward\\OneDrive\\RAMP\\IP-02\\new_OSTRTA\\TagManager\\TagManager\\TagManager\\VideoManager\\VideoManager.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Edward\\.nuget\\packages\\blazor.bootstrap\\3.0.0-preview.3\\blazor.bootstrap.3.0.0-preview.3.nupkg.sha512",
+    "C:\\Users\\Edward\\.nuget\\packages\\csvhelper\\33.1.0\\csvhelper.33.1.0.nupkg.sha512",
     "C:\\Users\\Edward\\.nuget\\packages\\dapper\\2.1.35\\dapper.2.1.35.nupkg.sha512",
     "C:\\Users\\Edward\\.nuget\\packages\\microsoft.aspnetcore.authorization\\8.0.4\\microsoft.aspnetcore.authorization.8.0.4.nupkg.sha512",
     "C:\\Users\\Edward\\.nuget\\packages\\microsoft.aspnetcore.components\\8.0.4\\microsoft.aspnetcore.components.8.0.4.nupkg.sha512",

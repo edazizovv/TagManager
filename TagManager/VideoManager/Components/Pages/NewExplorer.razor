@@ -6,7 +6,9 @@
 @inject IPizzaService PizzaService
 @inject ITagService TagService
 @inject IPizzaTagService PizzaTagService
+@inject IRealmService RealmService
 @inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
 @rendermode InteractiveServer
 
 <HeadContent>
@@ -30,7 +32,16 @@ else
 
     <h3>Pizzas!</h3>
     
-    <h2>Realm: @selectedRealm</h2>
+    <h2>Realm: </h2>
+
+        <InputSelect @bind-Value="selectedRealm">
+            @foreach (var option in realmNames)
+            {
+                <option value="@option">@option</option>
+            }
+        </InputSelect>
+
+        <p>You selected: @selectedRealm</p>
 
 	<p> Block 1: Search bar & preview </p>
 
@@ -132,6 +143,8 @@ else
 
     private Pizza currentPizza = new Pizza();
     private List<Pizza> todaysPizzas = default!;
+    private List<Realm> allRealms = default;
+    private List<string> realmNames = default!;
 
     private Tag currentTag = new Tag();
     private List<string> currentSearchTagList = new List<string>();
@@ -156,8 +169,13 @@ else
     protected override async Task OnInitializedAsync()
     {
         currentPizza._name = "";
-        availableTags = await TagService.GetTagList();
-        todaysPizzas = await PizzaService.GetPizzaList(currentSearchTagList);
+        allRealms = await RealmService.GetRealmList();
+        realmNames = allRealms?
+            .Select(r => r.name)
+            .ToList()
+            ?? new List<string>();
+        availableTags = await TagService.GetTagList(selectedRealm);
+        todaysPizzas = await PizzaService.GetPizzaList(selectedRealm, currentSearchTagList);
         await base.OnInitializedAsync();
     }
 
@@ -198,8 +216,8 @@ else
                 await CopyToClipboard(currentPizza._link);
                 break;
             case ExplorerDefaultAction.OpenLink:
-                string uri = currentPizza.PreferredApp + "://" + currentPizza.StoragePath + "/content/" + currentPizza._link;
-                await JSRuntime.InvokeVoidAsync("openLink", uri, currentPizza.PreferredApp);
+                string uri = $"{Navigation.BaseUri}base/{selectedRealm}/cntn/{currentPizza._link}";
+                await JSRuntime.InvokeVoidAsync("openLink", uri);
                 break;
             case ExplorerDefaultAction.None:
             default:
@@ -222,7 +240,12 @@ else
         addButton.ShowLoading("Adding...");
 
         // await Task.Delay(1000);
-        await PizzaTagService.CreateTag(currentTag.Id, currentTag.Value);
+        PizzaTag pizzaTagToCreate = new PizzaTag
+        {
+            pizzaId = currentTag.Id,
+            tagName = currentTag.Value
+        };
+        await PizzaTagService.CreateTag(pizzaTagToCreate);
         currentPizza.Tags = await PizzaTagService.GetTags(currentPizza.id);
 
         addButton.HideLoading();
@@ -252,7 +275,7 @@ else
     {
         goSearchButton.ShowLoading("Searching...");
 
-        todaysPizzas = await PizzaService.GetPizzaList(currentSearchTagList);
+        todaysPizzas = await PizzaService.GetPizzaList(selectedRealm, currentSearchTagList);
         currentPizza = new Pizza();
 
         goSearchButton.HideLoading();

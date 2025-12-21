@@ -1,12 +1,15 @@
-﻿using Microsoft.AspNetCore.DataProtection.KeyManagement.Internal;
-using System.Xml.Linq;
+﻿using CsvHelper;
 using Dapper;
-using Npgsql;
-using System.Data;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel;
+using Microsoft.AspNetCore.DataProtection.KeyManagement.Internal;
+using Npgsql;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using System.Data;
+using System.Globalization;
+using System.IO.Compression;
+using System.Xml.Linq;
 
 namespace VideoManager.Models
 {
@@ -34,6 +37,22 @@ namespace VideoManager.Models
         [Range(1, int.MaxValue, ErrorMessage = "Default action is required.")]
         public ExplorerDefaultAction DefaultAction { get; set; } = ExplorerDefaultAction.None;
         public string? PreferredApp { get; set; }
+    }
+
+    public class EmptyPizza
+    {
+        public string realm { get; set; }
+        public int id { get; set; }
+        public string _name { get; set; }
+        public string _author { get; set; }
+        public string thumbnail { get; set; }
+        public string _link { get; set; }
+    }
+
+    public class PizzaTag
+    {
+        public int pizzaId { get; set; }
+        public string tagName { get; set; }
     }
 
     public class Pizza
@@ -162,8 +181,8 @@ namespace VideoManager.Models
 
     public interface IPizzaService
     {
-        // public Task<bool> CreatePizza(Pizza pizza);
-        public Task<List<Pizza>> GetPizzaList(List<string> filterTags);
+        public Task<bool> CreatePizza(EmptyPizza pizza);
+        public Task<List<Pizza>> GetPizzaList(string selectedRealm, List<string> filterTags);
         public Task<Pizza> UpdatePizza(Pizza pizza);
         // public Task<bool> DeletePizza(int key);
     }
@@ -177,15 +196,20 @@ namespace VideoManager.Models
             _dbService = dbService;
         }
 
-        /*
-        public async Task<bool> CreatePizza(Pizza pizza)
+        
+        public async Task<bool> CreatePizza(EmptyPizza pizza)
         {
-            var result = await _dbService.Insert<int>("INSERT INTO public.pizzas (id, name, description) VALUES (@Id, @Name, @Description)", pizza);
+            string insertQuery = @"
+                INSERT INTO public.pizzas (realm, id, _name, _author, thumbnail, _link) 
+                VALUES (@realm, @id, @_name, @_author, @thumbnail, @_link)
+            ";
+            var result = await _dbService.Insert<int>(insertQuery, pizza);
+            
             return true;
         }
-        */
+        
 
-        public async Task<List<Pizza>> GetPizzaList(List<string> filterTags)
+        public async Task<List<Pizza>> GetPizzaList(string selectedRealm, List<string> filterTags)
         {
 
             string baseQuery = @"
@@ -209,6 +233,7 @@ namespace VideoManager.Models
                 public.pizzatag AS t 
                 ON 
                 p.id = t.id
+                WHERE p.realm = @realm
             ";
 
             
@@ -221,7 +246,7 @@ namespace VideoManager.Models
                 int tagCount = filterTags.Count;
 
                 string filteredQuery = baseQuery + $@"
-                    WHERE p.id IN (
+                    AND p.id IN (
                         SELECT x.id
                         FROM 
                         (
@@ -247,12 +272,12 @@ namespace VideoManager.Models
                     )
                 ";
 
-                pizzaRows = await _dbService.GetAll<PizzaRow>(filteredQuery, new { });
+                pizzaRows = await _dbService.GetAll<PizzaRow>(filteredQuery, new { realm = selectedRealm });
 
             }
             else
             {
-                pizzaRows = await _dbService.GetAll<PizzaRow>(baseQuery, new { });
+                pizzaRows = await _dbService.GetAll<PizzaRow>(baseQuery, new { realm = selectedRealm });
             }
 
             List<Pizza> pizzaList = pizzaRows
@@ -297,9 +322,9 @@ namespace VideoManager.Models
 
     public interface ITagService
     {
-        public Task<bool> CreateTag(string tag);
-        public Task<List<string>> GetTagList();
-        public Task<bool> DeleteTag(string tag);
+        public Task<bool> CreateTag(ShortTag tag);
+        public Task<List<string>> GetTagList(string selectedRealm);
+        public Task<bool> DeleteTag(ShortTag tag);
     }
 
     public class TagService : ITagService
@@ -311,22 +336,27 @@ namespace VideoManager.Models
             _dbService = dbService;
         }
 
-        public async Task<bool> CreateTag(string tag)
+        public async Task<bool> CreateTag(ShortTag tag)
         {
-            var result = await _dbService.Insert<int>("INSERT INTO public.tags (tag) VALUES (@Tag)", new { Tag = tag });
+            var result = await _dbService.Insert<int>("INSERT INTO public.tags (tag) VALUES (@Tag) ON CONFLICT (tag) DO NOTHING", new { Tag = tag.Value });
             return true;
         }
 
-        public async Task<List<string>> GetTagList()
+        public async Task<List<string>> GetTagList(string selectedRealm)
         {
-            var tagList = await _dbService.GetAll<string>("SELECT * FROM public.tags", new { });
+            // TODO: implement realm-specific tags
+            string tagQuery = @"
+                SELECT tag
+                FROM public.tags
+            ";
+            var tagList = await _dbService.GetAll<string>(tagQuery, new { });
             tagList.Add("nope");
             return tagList;
         }
 
-        public async Task<bool> DeleteTag(string tag)
+        public async Task<bool> DeleteTag(ShortTag tag)
         {
-            var deleteTag = await _dbService.Delete<int>("DELETE FROM public.tags WHERE tag=@Tag", new { Tag = tag });
+            var deleteTag = await _dbService.Delete<int>("DELETE FROM public.tags WHERE tag=@Tag", new { Tag = tag.Value });
             return true;
         }
 
@@ -334,7 +364,7 @@ namespace VideoManager.Models
 
     public interface IRealmService
     {
-        public Task<bool> AddOrUpdateRealm(string realmName, string realmView, ExplorerDefaultAction defaultAction, string? preferredApp);
+        public Task<bool> AddOrUpdateRealm(Realm realm);
         public Task<List<Realm>> GetRealmList();
         public Task<bool> DeleteRealm(string realmName);
     }
@@ -348,7 +378,7 @@ namespace VideoManager.Models
             _dbService = dbService;
         }
 
-        public async Task<bool> AddOrUpdateRealm(string realmName, string realmView, ExplorerDefaultAction defaultAction, string? preferredApp)
+        public async Task<bool> AddOrUpdateRealm(Realm realm)
         {
             string baseQuery = @"
                 SELECT *
@@ -356,7 +386,7 @@ namespace VideoManager.Models
                 WHERE name = @name
                 ;
             ";
-            var realmList = await _dbService.GetAll<Realm>(baseQuery, new { name = realmName });
+            var realmList = await _dbService.GetAll<Realm>(baseQuery, new { name = realm.name });
             if (realmList.Count() == 1)
             {
                 var updateQuery = @"
@@ -367,7 +397,7 @@ namespace VideoManager.Models
                 ";
                 var result = await _dbService.Update<int>(
                     updateQuery,
-                    new { RealmName = realmName, RealmView = realmView, DefaultAction = defaultAction, PreferredApp = preferredApp }
+                    new { RealmName = realm.name, RealmView = realm.view, DefaultAction = realm.DefaultAction, PreferredApp = realm.PreferredApp }
                     );
             }
             else
@@ -375,7 +405,7 @@ namespace VideoManager.Models
                 var result = await _dbService.Insert<int>(
                     "INSERT INTO public.accessories (name, view, default_action, preferred_app) " +
                     "VALUES (@RealmName, @RealmView, @DefaultAction, @PreferredApp)",
-                    new { RealmName = realmName, RealmView = realmView, DefaultAction = defaultAction, PreferredApp = preferredApp }
+                    new { RealmName = realm.name, RealmView = realm.view, DefaultAction = realm.DefaultAction, PreferredApp = realm.PreferredApp }
                     );
             }
             return true;
@@ -399,7 +429,7 @@ namespace VideoManager.Models
 
     public interface IPizzaTagService
     {
-        public Task<bool> CreateTag(int pizzaId, string tag);
+        public Task<bool> CreateTag(PizzaTag pt);
         public Task<List<string>> GetTags(int pizzaId);
         public Task<bool> UpdateTag(int pizzaId, string oldTag, string newTag);
         public Task<bool> DeleteTag(int pizzaId, string tag);
@@ -414,9 +444,13 @@ namespace VideoManager.Models
             _dbService = dbService;
         }
 
-        public async Task<bool> CreateTag(int pizzaId, string tag)
+        public async Task<bool> CreateTag(PizzaTag pt)
         {
-            var result = await _dbService.Insert<int>($"INSERT INTO public.pizzatag (id, tag) VALUES (@pizzaId, @tag)", new { pizzaId = pizzaId, tag = tag });
+            string insertQuery = @"
+                INSERT INTO public.pizzatag (id, tag) 
+                VALUES (@pizzaId, @tagName)
+            ";
+            var result = await _dbService.Insert<int>(insertQuery, pt);
             return true;
         }
 
@@ -436,6 +470,307 @@ namespace VideoManager.Models
         {
             var deleteTag = await _dbService.Delete<int>("DELETE FROM public.pizzatag WHERE id=@pizzaId AND tag=@tag", new { pizzaId = pizzaId, tag = tag });
             return true;
+        }
+    }
+
+    public interface IExportSingleRealmService
+    {
+        Task<byte[]> BuildSingleZipAsync(string realmName, string realmView);
+    }
+
+    public class ExportSingleService : IExportSingleRealmService
+    {
+        private readonly IDbService _dbService;
+
+        public ExportSingleService(IDbService dbService)
+        {
+            _dbService = dbService;
+        }
+
+        public async Task<byte[]> BuildSingleZipAsync(string realmName, string realmView)
+        {
+            string tagsQuery = @"
+                SELECT DISTINCT t.tag AS Value
+                FROM 
+                public.tags as t
+                LEFT JOIN
+                public.pizzatag as pt
+                ON t.tag = pt.tag
+                LEFT JOIN
+                public.pizzas as p
+                ON pt.id = p.id
+                WHERE p.realm = @realmName
+            ";
+            var tagsRows = await _dbService.GetAll<ShortTag>(
+                tagsQuery, new { realmName = realmName });
+
+            string realmsQuery = @"
+                SELECT name
+                     , view
+                     , default_action as DefaultAction
+                     , preferred_app as PreferredApp
+                FROM public.accessories
+                WHERE name = @realmName
+            ";
+            var realmsRows = await _dbService.GetAll<Realm>(
+                realmsQuery, new { realmName = realmName });
+
+            string pizzasQuery = @"
+                SELECT realm
+                     , id
+                     , _name
+                     , _author
+                     , thumbnail
+                     , _link
+                FROM public.pizzas
+                WHERE realm = @realmName
+            ";
+            var pizzasRows = await _dbService.GetAll<EmptyPizza>(
+                pizzasQuery, new { realmName = realmName });
+
+            string pizzaTagsQuery = @"
+                SELECT DISTINCT pt.id as pizzaId
+                              , pt.tag as tagName
+                FROM 
+                public.pizzatag AS pt
+                LEFT JOIN
+                public.pizzas AS p
+                ON pt.id = p.id
+                WHERE p.realm = @realmName
+            ";
+            var pizzaTagsRows = await _dbService.GetAll<PizzaTag>(
+                pizzaTagsQuery, new { realmName = realmName });
+
+            return await BuildZipSingleInternal(
+                tagsRows,
+                realmsRows,
+                pizzasRows,
+                pizzaTagsRows,
+                realmName,
+                realmView
+            );
+        }
+
+        private async Task<byte[]> BuildZipSingleInternal(
+            IEnumerable<ShortTag> tagsRows,
+            IEnumerable<Realm> realmsRows,
+            IEnumerable<EmptyPizza> pizzasRows,
+            IEnumerable<PizzaTag> pizzaTagsRows,
+            string realmName,
+            string sourceFolderPath)
+        {
+            using var zipStream = new MemoryStream();
+
+            using (var zip = new ZipArchive(zipStream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+
+                var tagsCsvEntry = zip.CreateEntry("tags.csv");
+                using (var entryStream = tagsCsvEntry.Open())
+                using (var writer = new StreamWriter(entryStream))
+                using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+                {
+                    csv.WriteRecords(tagsRows);
+                }
+
+                var realmsCsvEntry = zip.CreateEntry("realms.csv");
+                using (var entryStream = realmsCsvEntry.Open())
+                using (var writer = new StreamWriter(entryStream))
+                using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+                {
+                    csv.WriteRecords(realmsRows);
+                }
+
+                var tabCsvEntry = zip.CreateEntry(realmName + "/tab.csv");
+                using (var entryStream = tabCsvEntry.Open())
+                using (var writer = new StreamWriter(entryStream))
+                using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+                {
+                    csv.WriteRecords(pizzasRows);
+                }
+
+                var tagCsvEntry = zip.CreateEntry(realmName + "/tag.csv");
+                using (var entryStream = tagCsvEntry.Open())
+                using (var writer = new StreamWriter(entryStream))
+                using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+                {
+                    csv.WriteRecords(pizzaTagsRows);
+                }
+
+                AddFolderToZip(zip, sourceFolderPath, realmName + "/");
+            }
+
+            return zipStream.ToArray();
+        }
+
+        private void AddFolderToZip(
+            ZipArchive zip,
+            string folderPath,
+            string zipPath)
+        {
+            foreach (var file in Directory.GetFiles(folderPath))
+            {
+                var entryName = Path.Combine(zipPath, Path.GetFileName(file))
+                                    .Replace("\\", "/");
+
+                zip.CreateEntryFromFile(file, entryName);
+            }
+
+            foreach (var dir in Directory.GetDirectories(folderPath))
+            {
+                var dirName = Path.GetFileName(dir);
+                AddFolderToZip(zip, dir, Path.Combine(zipPath, dirName));
+            }
+        }
+    }
+
+
+    public interface IExportAllRealmService
+    {
+        Task<byte[]> BuildAllZipAsync();
+    }
+
+    public class ExportAllService : IExportAllRealmService
+    {
+        private readonly IDbService _dbService;
+
+        public ExportAllService(IDbService dbService)
+        {
+            _dbService = dbService;
+        }
+
+        public async Task<byte[]> BuildAllZipAsync()
+        {
+            string tagsQuery = @"
+                SELECT tag AS Value
+                FROM 
+                public.tags
+            ";
+            var tagsRows = await _dbService.GetAll<ShortTag>(
+                tagsQuery, new { });
+
+            string realmsQuery = @"
+                SELECT name
+                     , view
+                     , default_action as DefaultAction
+                     , preferred_app as PreferredApp
+                FROM public.accessories
+            ";
+            var realmsRows = await _dbService.GetAll<Realm>(
+                realmsQuery, new { });
+
+            string pizzasQuery = @"
+                SELECT realm
+                     , id
+                     , _name
+                     , _author
+                     , thumbnail
+                     , _link
+                FROM public.pizzas
+            ";
+            var pizzasRows = await _dbService.GetAll<EmptyPizza>(
+                pizzasQuery, new { });
+
+            string pizzaTagsQuery = @"
+                SELECT id as pizzaId
+                     , tag as tagName
+                FROM 
+                public.pizzatag
+            ";
+            var pizzaTagsRows = await _dbService.GetAll<PizzaTag>(
+                pizzaTagsQuery, new { });
+
+            return await BuildZipInternal(
+                tagsRows,
+                realmsRows,
+                pizzasRows,
+                pizzaTagsRows
+            );
+        }
+
+        private async Task<byte[]> BuildZipInternal(
+            IEnumerable<ShortTag> tagsRows,
+            IEnumerable<Realm> realmsRows,
+            IEnumerable<EmptyPizza> pizzasRows,
+            IEnumerable<PizzaTag> pizzaTagsRows)
+        {
+
+            using var zipStream = new MemoryStream();
+
+            using (var zip = new ZipArchive(zipStream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+
+                var tagsCsvEntry = zip.CreateEntry("tags.csv");
+                using (var entryStream = tagsCsvEntry.Open())
+                using (var writer = new StreamWriter(entryStream))
+                using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+                {
+                    csv.WriteRecords(tagsRows);
+                }
+
+                var realmsCsvEntry = zip.CreateEntry("realms.csv");
+                using (var entryStream = realmsCsvEntry.Open())
+                using (var writer = new StreamWriter(entryStream))
+                using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+                {
+                    csv.WriteRecords(realmsRows);
+                }
+
+                List<string> realmNames = realmsRows?
+                    .Select(r => r.name)
+                    .ToList()
+                    ?? new List<string>();
+
+                foreach (string realmName in realmNames)
+                {
+
+                    string? realmView = realmsRows?
+                        .Where(r => r.name == realmName)
+                        .Select(r => r.view)
+                        .FirstOrDefault();
+
+                    var tabCsvEntry = zip.CreateEntry(realmName + "/tab.csv");
+                    using (var entryStream = tabCsvEntry.Open())
+                    using (var writer = new StreamWriter(entryStream))
+                    using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+                    {
+                        csv.WriteRecords(pizzasRows);
+                    }
+
+                    var tagCsvEntry = zip.CreateEntry(realmName + "/tag.csv");
+                    using (var entryStream = tagCsvEntry.Open())
+                    using (var writer = new StreamWriter(entryStream))
+                    using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+                    {
+                        csv.WriteRecords(pizzaTagsRows);
+                    }
+
+                    AddFolderToZip(zip, realmView, realmName + "/");
+
+                }
+
+            }
+
+            return zipStream.ToArray();
+        }
+
+        private void AddFolderToZip(
+            ZipArchive zip,
+            string folderPath,
+            string zipPath)
+        {
+            foreach (var file in Directory.GetFiles(folderPath))
+            {
+                var entryName = Path.Combine(zipPath, Path.GetFileName(file))
+                                    .Replace("\\", "/");
+
+                zip.CreateEntryFromFile(file, entryName);
+            }
+
+            foreach (var dir in Directory.GetDirectories(folderPath))
+            {
+                var dirName = Path.GetFileName(dir);
+                AddFolderToZip(zip, dir, Path.Combine(zipPath, dirName));
+            }
         }
     }
 
